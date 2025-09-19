@@ -1,22 +1,60 @@
-name: Rust
+name: Release on Tag
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags: ['v*']          # run only when a tag like v1.2.3 is pushed
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  release:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write          # push commits + create releases
     steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      # 1. Checkout the tag with full history for git-cliff
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Generate/update changelog and commit it
+      - name: Generate changelog
+        uses: orhun/git-cliff-action@v4
+        id: changelog
+        with:
+          config: cliff.toml          # optional; falls back to defaults
+          args: --unreleased --strip header
+        env:
+          output: CHANGELOG.md
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Commit updated changelog
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore: update changelog for ${{ github.ref_name }}"
+          git push origin HEAD:main
+
+      # 3. Run Rust tests
+      - name: Run tests
+        run: cargo test --locked
+
+      # 4. Build release binary
+      - name: Build release
+        run: cargo build --release --locked
+
+      # 5. Create GitHub release with changelog body & binary asset
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.content }}
+          files: target/release/mostro-cli
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
