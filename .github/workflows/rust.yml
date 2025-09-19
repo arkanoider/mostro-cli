@@ -25,9 +25,8 @@ jobs:
         id: changelog
         with:
           config: cliff.toml          # optional; falls back to defaults
-          args: --unreleased --strip header
+          args: --unreleased --strip header --output CHANGELOG.md
         env:
-          output: CHANGELOG.md
           GITHUB_REPOSITORY: ${{ github.repository }}
 
       - name: Commit updated changelog
