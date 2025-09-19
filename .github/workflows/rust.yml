@@ -17,7 +17,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: main  # Checkout main branch instead of the tag
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # 2. Generate/update changelog and commit it
@@ -26,7 +25,7 @@ jobs:
         id: changelog
         with:
           config: cliff.toml          # optional; falls back to defaults
-          args: --unreleased --strip header --output CHANGELOG.md
+          args: --latest --strip header --output CHANGELOG.md
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
