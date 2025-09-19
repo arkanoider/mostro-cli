@@ -13,10 +13,11 @@ jobs:
     permissions:
       contents: write          # push commits + create releases
     steps:
-      # 1. Checkout the tag with full history for git-cliff
+      # 1. Checkout the repository with full history for git-cliff
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main  # Checkout main branch instead of the tag
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # 2. Generate/update changelog and commit it
